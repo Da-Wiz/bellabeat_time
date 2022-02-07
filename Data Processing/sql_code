@@ -1,0 +1,331 @@
+#### BELLABEAT STUDY - CHECK, CLEAN AND PROCESS DATA IN MICROSOFT SSMS
+		
+## Check DailyActivity Table
+# Number of rows in table
+SELECT 
+	COUNT(*) AS row_count
+FROM 
+	DailyActivity
+;
+
+# Get Number of unique user IDs and check that all IDs have the same number of characters
+SELECT 
+	DISTINCT Id, 
+	LEN(Id) AS id_len
+FROM 
+	DailyActivity
+;
+
+# Start and End Date of data 
+SELECT 
+	MIN(ActivityDate) AS start_date, 
+	MAX(ActivityDate) AS end_date
+FROM 
+	DailyActivity
+;
+
+# Find duplicate rows in table
+SELECT 
+	Id, 
+	ActivityDate
+FROM 
+	DailyActivity
+GROUP BY 
+	Id, 
+	ActivityDate 
+HAVING 
+	COUNT(Id) > 1
+;
+
+# Check for records with 0 in TotalSteps
+SELECT 
+	SUM(num_days_no_steps) AS total_days_no_steps
+FROM (
+	SELECT 
+		COUNT(*) AS num_days_no_steps
+	FROM 
+		DailyActivity
+	WHERE 
+		TotalSteps = 0
+	) AS nd
+;
+
+# List participants and number of days with 0 in TotalSteps 
+SELECT 
+	Id, COUNT(*) AS num_days_no_steps
+FROM 
+	DailyActivity
+WHERE 
+	TotalSteps = 0
+GROUP BY 
+	Id
+ORDER BY 
+	num_days_no_steps 
+DESC
+;
+
+# Delete rows where TotalSteps = 0; (Users most likely forgot to use Fitbit on those days)
+DELETE FROM 
+	DailyActivity
+WHERE 
+	TotalSteps = 0
+;
+
+# Check for outliers in TotalSteps and Calories; 
+SELECT 
+	Id, 
+	COUNT(TotalSteps) AS rec_count,
+	MIN(TotalSteps) AS min_steps, 
+	MAX(TotalSteps) AS max_steps, 
+	MIN(Calories) AS min_calories, 
+	MAX(Calories) AS max_calories
+FROM DailyActivity
+GROUP BY Id
+;
+
+# Number of columns in the table
+SELECT 
+	COUNT(*) AS col_count
+FROM 
+	INFORMATION_SCHEMA.COLUMNS
+WHERE 
+	TABLE_NAME ='DailyActivity'
+;
+
+# List names of columns and data type in the table
+SELECT 
+	COLUMN_NAME, 
+	DATA_TYPE
+FROM 
+	INFORMATION_SCHEMA.COLUMNS
+WHERE 
+	TABLE_NAME = 'DailyActivity'
+;
+
+
+## Check SleepRecord Table
+# Number of rows in table
+SELECT 
+	COUNT(*) AS row_count
+FROM 
+	SleepRecord
+;
+
+# Get Number of unique user IDs and check that all IDs have the same number of characters
+SELECT 
+	DISTINCT Id, 
+	LEN(Id) AS Id_len
+FROM 
+	SleepRecord
+;
+
+# Start and End Date of data 
+SELECT 
+	MIN(SleepDay) AS start_date, 
+	MAX(SleepDay) AS end_date
+FROM 
+	SleepRecord
+;
+
+# Find duplicate rows in table
+SELECT 
+	Id, 
+	SleepDay
+FROM 
+	SleepRecord
+GROUP BY 
+	Id, 
+	SleepDay 
+HAVING 
+	COUNT(Id) > 1
+;
+
+# Create new SleepRecord table with duplicate rows deleted
+SELECT 
+	DISTINCT *
+INTO 
+	dbo.SleepRecordV2
+FROM 
+	SleepRecord
+SP_RENAME 
+	'SleepRecord', 'SleepRecordV1'
+DROP TABLE IF EXISTS 
+	SleepRecordV1
+SP_RENAME 
+	'SleepRecordV2', 'SleepRecord'
+;
+
+# Check for records with 0 in TotalSleepRecords
+SELECT 
+	SUM(num_days_no_sleep) AS total_days_no_sleep
+FROM 
+	(
+		SELECT 
+			COUNT(*) AS num_days_no_sleep
+		FROM 
+			SleepRecord
+		WHERE 
+			TotalSleepRecords = 0
+	) AS nd
+;
+
+# Split SleepDay column into Date and Time
+SELECT 
+	*, 
+	CAST(SleepDay AS date) AS SleepDate,
+	CAST(SleepDay AS time) AS SleepTime
+INTO SleepRecordV2
+FROM SleepRecord
+ALTER TABLE SleepRecordV2
+DROP COLUMN Date
+SP_RENAME 
+	'SleepRecord', 'SleepRecordV1'
+DROP TABLE IF EXISTS 
+	SleepRecordV1
+SP_RENAME 
+	'SleepRecordV2', 'SleepRecord'
+;
+
+# Check for outliers in TotalMinutesAsleep and TotalTimeInBed; 
+SELECT 
+	Id, 
+	COUNT(TotalMinutesAsleep) AS rec_count,
+	MIN(TotalMinutesAsleep) AS min_sleep, 
+	MAX(TotalMinutesAsleep) AS max_sleep, 
+	MIN(TotalTimeInBed) AS min_bedtime, 
+	MAX(TotalTimeInBed) AS max_bedtime
+FROM SleepRecord
+GROUP BY Id
+;
+
+# Number of columns in the table
+SELECT 
+	COUNT(*) AS col_count
+FROM 
+	INFORMATION_SCHEMA.COLUMNS
+WHERE 
+	TABLE_NAME ='SleepRecord'
+;
+
+# List names of columns and data type in the table
+SELECT 
+	COLUMN_NAME, DATA_TYPE
+FROM 
+	INFORMATION_SCHEMA.COLUMNS
+WHERE 
+	TABLE_NAME = 'SleepRecord'
+;
+
+## Check WeightLog Table
+# Number of rows in table
+SELECT 
+	COUNT(*) AS row_count
+FROM 
+	WeightLog
+;
+
+# Get Number of unique user IDs and check that all IDs have the same number of characters
+SELECT 
+	DISTINCT Id, 
+	LEN(Id) AS Id_len
+FROM 
+	WeightLog
+;
+
+# Start and End Date of data 
+SELECT 
+	MIN(Date) AS start_date, 
+	MAX(Date) AS end_date
+FROM WeightLog
+;
+
+# Find duplicate rows in table
+SELECT 
+	Id, 
+	Date
+FROM 
+	WeightLog
+GROUP BY 
+	Id, 
+	Date 
+HAVING 
+	COUNT(Id) > 1
+;
+
+# Check for records with 0 in WeightKg
+SELECT 
+	SUM(num_days_no_weight) AS total_days_no_weight
+FROM 
+	(
+		SELECT 
+			COUNT(*) AS num_days_no_weight
+		FROM 
+			WeightLog
+		WHERE 
+			WeightKg = 0
+	) AS nd
+;
+
+# Split Date column into Date and Time
+SELECT 
+	*, 
+	CAST(Date AS date) AS WeightDay,
+	CAST(Date AS time) AS WeightTime
+INTO WeightLogV2
+FROM WeightLog
+ALTER TABLE WeightLogV2
+DROP COLUMN Date
+SP_RENAME 
+	'WeightLog', 'WeightLogV1'
+DROP TABLE IF EXISTS 
+	WeightLogV1
+SP_RENAME 
+	'WeightLogV2', 'WeightLog'
+;
+
+# Check for outliers in WeightKg and BMI; 
+SELECT 
+	Id, 
+	COUNT(WeightKg) AS rec_count,
+	MIN(WeightKg) AS min_weight, 
+	MAX(WeightKg) AS max_weight, 
+	MIN(BMI) AS min_BMI, 
+	MAX(BMI) AS max_BMI
+FROM WeightLog
+GROUP BY Id
+
+# Number of columns in the table
+SELECT 
+	COUNT(*) AS col_count
+FROM 
+	INFORMATION_SCHEMA.COLUMNS
+WHERE 
+	TABLE_NAME ='WeightLog'
+;
+
+# List names of columns and data type in the table
+SELECT 
+	COLUMN_NAME, DATA_TYPE
+FROM 
+	INFORMATION_SCHEMA.COLUMNS
+WHERE 
+	TABLE_NAME = 'WeightLogInfo'
+;
+
+# Inner join DailyActivity and SleepRecord
+SELECT da.*, sr.TotalMinutesAsleep, sr.TotalTimeInBed
+INTO Acivity_Sleep
+FROM DailyActivity AS da
+JOIN SleepRecord AS sr
+ON da.ActivityDate = sr.SleepDay AND da.Id = sr.Id
+ORDER BY da.Id, da.ActivityDate
+;
+
+# Inner join DailyActivity and WeightLog
+SELECT da.*, wl.WeightKg, wl.BMI, wl.Fat
+INTO Acivity_Weight
+FROM DailyActivity AS da
+JOIN WeightLog AS wl
+ON da.ActivityDate = wl.Date AND da.Id = wl.Id
+ORDER BY da.Id, da.ActivityDate
+;
