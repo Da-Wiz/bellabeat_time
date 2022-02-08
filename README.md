@@ -12,3 +12,8 @@ player in the global smart device market. Bellabeat believes that this goal can 
 The dataset for this project is made available by Möbius on [Kaggle](https://www.kaggle.com/arashnic/fitbit).
 
 ## Data Processing and Analysis
+The SQL code used to clean and process the data is included in the Data Process folder.
+The R code used to analyze the data and create visualizations is included in the Data Analysis folder.
+
+## Conclusion
+The detailed project report, the associated presentation and the references used in the project can be found in the project report document uploaded.
