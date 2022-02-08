@@ -1,0 +1,100 @@
+## Set up environment
+library(tidyverse)
+library(dplyr)
+library(summarytools)
+library(VennDiagram)
+library(ggplot2)
+library(ggpmisc)
+
+## Import CSV and view data frame
+
+activity_df <-read_csv("DailyActivity.csv")
+View(activity_df)
+sleep_df <-read_csv("SleepRecord.csv")
+View(sleep_df)
+weight_df <-read_csv("WeightLog.csv")
+View(weight_df)
+act_slp_df <-read_csv("Activity_Sleep.csv")
+View(act_slp_df)
+act_wgt_df <-read_csv("Activity_Weight.csv")
+View(act_wgt_df)
+
+## Get key statistics about data frames
+act_stats <- activity_df %>% 
+  select(TotalSteps, SedentaryMinutes, LightlyActiveMinutes, FairlyActiveMinutes, VeryActiveMinutes) %>% 
+  descr(., stats = c("mean", "min", "Q1", "med", "Q3", "max", "sd", "CV")) 
+view(act_stats, file = "~/act_stats.html")
+
+slp_stats <- sleep_df %>% 
+  select(TotalMinutesAsleep, TotalTimeInBed) %>% 
+  descr(., stats = c("mean", "min", "Q1", "med", "Q3", "max", "sd", "CV")) 
+view(slp_stats, file = "~/slp_stats.html")
+
+wgt_stats <- weight_df %>% 
+  select(WeightKg, BMI) %>% 
+  descr(., stats = c("mean", "min", "Q1", "med", "Q3", "max", "sd", "CV")) 
+view(wgt_stats, file = "~/wgt_stats.html")
+
+
+## Plot Venn diagram of users
+act_ids <- unique(activity_df$Id)
+slp_ids <- unique(sleep_df$Id)
+wgt_ids <- unique(weight_df$Id)
+
+venn.diagram(
+  x = list(act_ids, slp_ids, wgt_ids),
+  category.names = c("Activity", "Sleep","Weight"),
+  filename = "Usage_venn.png",
+  output=TRUE,
+  fill = c("light pink", "light blue", "green"),
+  cex = 1.2,
+  fontfamily = "sans",
+  fontface = "bold",
+  cat.cex = 1.4,
+  cat.fontfamily = "sans",
+  cat.fontface = "bold",
+  cat.default.pos = "outer",
+  cat.pos = c(-30, 40, 155))
+
+## Get number of users that used their devices each day and 
+## Plot Bar Chart of activity tracker use
+num_users <- activity_df %>% 
+  group_by(ActivityDate) %>% 
+  summarise(users_perday = sum(n())) %>%
+  mutate(percent_users = users_perday/max(users_perday))
+# View(num_users)
+
+ggplot(data = num_users) +
+  geom_col(mapping = aes(x = ActivityDate, y = percent_users, fill = percent_users )) +
+  scale_fill_viridis_c(option = "plasma",direction = -1) +
+  labs(x = "Date", y = "% Users",fill = "% Users")
+
+## Get active and non-active minutes for users and
+## Plot relationship between activity and sleep
+activity_sleep <- act_slp_df %>%
+  mutate(non_active_mins = (LightlyActiveMinutes+SedentaryMinutes) )
+#View(activity_sleep)
+
+ggplot(data = activity_sleep, mapping = aes(x = non_active_mins, y = TotalMinutesAsleep)) +
+  geom_point(color = 'blue', alpha = 0.4) +
+  geom_smooth(method = 'lm', se=FALSE, color = 'orangered', formula = y ~ x) +
+  stat_poly_eq(formula = y ~ x, aes(label = paste(..rr.label..)), label.y = "bottom", label.x = "left") +
+  labs(x = "Non-active Minutes", y = "Total Minutes Asleep")
+
+## Get active and non-active minutes for users and
+## Plot relationship between activity and weight
+weight_loss_df <- act_wgt_df %>%
+  group_by(Id) %>% 
+  mutate (active_mins = (VeryActiveMinutes+FairlyActiveMinutes)) %>%  
+  summarize(period = (last(ActivityDate) - first(ActivityDate)),
+            weight_loss = (first(WeightKg) - last(WeightKg)),
+            percent_wl = (weight_loss/first(WeightKg))*100,
+            mean_act = mean(active_mins),
+            sd_act = sd(active_mins)) %>% 
+  filter(period >= 15)
+#View(weight_loss_df)
+
+
+
+
+
