@@ -17,3 +17,4 @@ The R code used to analyze the data and create visualizations is included in the
 
 ## Conclusion
 The detailed project report, the associated presentation and the references used in the project can be found in the report document uploaded above.
+The story for this project has been published [here](https://werodrigue.medium.com/bellabeat-can-play-it-smart-with-time-200ebbca9dae).
